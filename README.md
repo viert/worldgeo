@@ -43,3 +43,18 @@ The indexes are based on https://github.com/johan/world.geo.json/blob/master/cou
 and this is the only GeoJSON source supported at the moment. Given that, you don't really
 need to build indexes yourself, as there are ready to use files built by GitHub CI.
 
+There are pre-built indexes with precision 5 to 7. Precision 7 means accuracy up to 150x150 meters,
+which must be enough given the source being even less accurate. Since more accurate index take much more
+disk and memory space, you might want to use precision 5 or 6 (5km or 1.2km correspondingly) as these take
+only a few Mb.
+
+
+#### Building a new index
+
+In case you still want to build a more (or less) precise index, you can do so by running
+
+```
+build-geoidx -o <output filename> -p <precision> [-t <num threads>]
+```
+
+and load the resulting file later on with `Index.load(filename)`
