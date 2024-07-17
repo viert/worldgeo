@@ -1,3 +1,5 @@
+name: Build Indexes
+
 on: workflow_dispatch
 
 permissions:
