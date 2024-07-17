@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "worldgeo"
+version = "1.0.0"
+authors = [{name = "Pavel Vorobyev", email = "aquavitale@yandex.ru"}]
+description = "world geohash index"
+requires-python = ">=3.11"
+dependencies = [
+    "python-geohash",
+    "requests",
+    "shapely"
+]
+keywords = [
+    "geohash",
+    "world",
+    "index",
+    "geoindex",
+]
+license = {text = "MIT"}
+readme = "README.md"
+
+[project.urls]
+Source = "https://github.com/viert/worldgeo"
+
+[project.scripts]
+build-geoidx = "worldgeo.builder:build"
