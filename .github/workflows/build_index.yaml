@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build_index:
-    runs-on: "ubuntu:latest"
+    runs-on: "ubuntu-latest"
     container: "python:3.11.8"
     env:
       CI_COMMIT_MESSAGE: Continuous Integration Autobuild
