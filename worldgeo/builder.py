@@ -3,6 +3,7 @@ import logging
 import sys
 import time
 import requests
+from pycountry import countries
 from logging import getLogger, Logger, StreamHandler, Formatter
 from threading import Thread
 from typing import Optional, Dict, Any
@@ -11,7 +12,6 @@ from shapely.geometry import shape
 from argparse import ArgumentParser
 from worldgeo import Index
 from worldgeo.collect import collect
-from worldgeo.objects import Country
 
 DEFAULT_NUM_THREADS = 5
 GEOJSON_URL = "https://github.com/johan/world.geo.json/raw/master/countries.geo.json"
@@ -72,8 +72,19 @@ def build_index(
         country_filter = country_filter.lower()
 
     for item in data["features"]:
-        country = Country(name=item["properties"]["name"], code=item["id"])
-        if country_filter and (country.code.lower() != country_filter and country.name.lower() != country_filter):
+        country_name = item['properties']['name']
+        country_code = item["id"]
+        country = countries.get(alpha_3=country_code)
+
+        if country is None:
+            log.warn("skipping country %s (%s) not found in pycountry", country_code, country_name)
+            continue
+
+        if country_filter and (
+                country.alpha_2.lower() != country_filter and
+                country.alpha_3.lower() != country_filter and
+                country.name.lower() != country_filter
+        ):
             continue
         boundaries = shape(item["geometry"])
         in_queue.put((country, boundaries))

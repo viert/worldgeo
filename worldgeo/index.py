@@ -1,11 +1,10 @@
 import os.path
-
 import requests
 from typing import Optional, Self
 from io import StringIO
 from geohash import encode
-from .objects import Country
-
+from pycountry import countries
+from pycountry.db import Country
 
 PREBUILT_BASE_URL = "https://github.com/viert/worldgeo/raw/main/world"
 
@@ -23,9 +22,9 @@ class Index:
         self._src = None
 
     def add(self, gh: str, country: Country):
-        if country.code not in self._countries:
-            self._countries[country.code] = country
-        self._index[gh] = country.code
+        if country.alpha_3 not in self._countries:
+            self._countries[country.alpha_3] = country
+        self._index[gh] = country.alpha_3
 
     def find_by_hash(self, gh: str) -> Optional[Country]:
         for i in range(self.precision, 0, -1):
@@ -41,8 +40,6 @@ class Index:
     def dump(self, filename: str):
         with open(filename, "w") as f:
             f.write(f"P {self.precision}\n")
-            for code, country in self._countries.items():
-                f.write(f"C {code} {country.name}\n")
             for gh, code in self._index.items():
                 f.write(f"G {gh} {code}\n")
 
@@ -66,8 +63,8 @@ class Index:
             f = open(path)
 
         precision = None
-        countries = {}
         index = {}
+        ctrs = {}
 
         for line in f:
             line = line.strip()
@@ -76,10 +73,12 @@ class Index:
             match tokens[0]:
                 case "P":
                     precision = int(tokens[1])
-                case "C":
-                    countries[tokens[1]] = Country(name=tokens[2], code=tokens[1])
                 case "G":
-                    index[tokens[1]] = tokens[2]
+                    code = tokens[2]
+                    if code not in ctrs:
+                        country = countries.get(alpha_3=code)
+                        ctrs[code] = country
+                    index[tokens[1]] = code
         f.close()
 
         if precision is None:
@@ -88,7 +87,7 @@ class Index:
         inst = cls(precision)
         inst._src = path
         inst._index = index
-        inst._countries = countries
+        inst._countries = ctrs
 
         return inst
 
