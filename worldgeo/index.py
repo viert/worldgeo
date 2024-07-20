@@ -3,6 +3,7 @@ import requests
 from typing import Optional, Self
 from io import StringIO
 from geohash import encode
+from collections import defaultdict
 from pycountry import countries
 from pycountry.db import Country
 
@@ -38,10 +39,16 @@ class Index:
         return self.find_by_hash(gh)
 
     def dump(self, filename: str):
+        dmp = defaultdict(list)
+
+        for gh, code in self._index.items():
+            dmp[code].append(gh)
+
         with open(filename, "w") as f:
             f.write(f"P {self.precision}\n")
-            for gh, code in self._index.items():
-                f.write(f"G {gh} {code}\n")
+            for code, ghs in dmp.items():
+                hashes = ":".join(ghs)
+                f.write(f"G {code} {hashes}")
 
     @classmethod
     def load_default(cls, precision: int) -> Self:
@@ -74,11 +81,12 @@ class Index:
                 case "P":
                     precision = int(tokens[1])
                 case "G":
-                    code = tokens[2]
-                    if code not in ctrs:
-                        country = countries.get(alpha_3=code)
-                        ctrs[code] = country
-                    index[tokens[1]] = code
+                    code = tokens[1]
+                    ghs = tokens[2].split(":")
+                    country = countries.get(alpha_3=code)
+                    ctrs[code] = country
+                    for gh in ghs:
+                        index[gh] = code
         f.close()
 
         if precision is None:
