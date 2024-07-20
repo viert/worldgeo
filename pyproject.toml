@@ -28,3 +28,6 @@ Source = "https://github.com/viert/worldgeo"
 
 [project.scripts]
 build-geoidx = "worldgeo.builder:build"
+
+[tool.setuptools]
+py-modules = []
