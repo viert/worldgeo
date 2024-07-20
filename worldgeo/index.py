@@ -48,7 +48,7 @@ class Index:
             f.write(f"P {self.precision}\n")
             for code, ghs in dmp.items():
                 hashes = ":".join(ghs)
-                f.write(f"G {code} {hashes}")
+                f.write(f"G {code} {hashes}\n")
 
     @classmethod
     def load_default(cls, precision: int) -> Self:

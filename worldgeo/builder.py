@@ -77,7 +77,7 @@ def build_index(
         country = countries.get(alpha_3=country_code)
 
         if country is None:
-            log.warn("skipping country %s (%s) not found in pycountry", country_code, country_name)
+            log.warning("skipping country %s (%s) not found in pycountry", country_code, country_name)
             continue
 
         if country_filter and (
