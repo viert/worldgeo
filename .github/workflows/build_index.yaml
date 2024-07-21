@@ -27,10 +27,10 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Build indexes
         run: |
-          mkdir -p world
-          python3.11 build_index.py -o world/world4.idx -p 4 -t 10
-          python3.11 build_index.py -o world/world5.idx -p 5 -t 10
-          python3.11 build_index.py -o world/world6.idx -p 6 -t 10
+          mkdir -p prebuilt/world
+          python3.11 build_index.py -o prebuilt/world/world4.idx -p 4 -t 10
+          python3.11 build_index.py -o prebuilt/world/world5.idx -p 5 -t 10
+          python3.11 build_index.py -o prebuilt/world/world6.idx -p 6 -t 10
       - name: GIT Commit Artifacts
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
