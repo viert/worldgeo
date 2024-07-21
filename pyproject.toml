@@ -30,4 +30,4 @@ Source = "https://github.com/viert/worldgeo"
 build-geoidx = "worldgeo.builder:build"
 
 [tool.setuptools]
-py-modules = []
+py-modules = ["worldgeo"]

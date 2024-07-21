@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 from queue import Queue
 from shapely.geometry import shape
 from argparse import ArgumentParser
-from worldgeo import Index
+from worldgeo import Index, ShardedIndex
 from worldgeo.collect import collect
 
 DEFAULT_NUM_THREADS = 5
@@ -46,11 +46,15 @@ def build_index(
     out_filename: str,
     precision: int,
     *,
+    sharded: bool,
+    shard_split: int,
     country_filter: Optional[str] = None,
-    num_threads: int = DEFAULT_NUM_THREADS
+    num_threads: int = DEFAULT_NUM_THREADS,
 ):
-
-    root = Index(precision)
+    if sharded:
+        root = ShardedIndex(precision, shard_split=shard_split)
+    else:
+        root = Index(precision)
 
     if in_filename is None:
         data = get_default_source()
@@ -93,6 +97,7 @@ def build_index(
         in_queue.put(None)
 
     wrk_alive = num_threads
+
     while True:
         item = out_queue.get()
         if item is None:
@@ -121,11 +126,24 @@ def build():
     parser = ArgumentParser()
     parser.add_argument("country", nargs="?", default=None, help="optional country filter")
     parser.add_argument("-i", "--input", default=None, help="geojson input filename")
-    parser.add_argument("-o", "--output", required=True, help="index output filename")
+    parser.add_argument("-o", "--output", required=True, help="index output filename "
+                                                              "(or prefix for sharded indexes)")
     parser.add_argument("-p", "--precision", type=int, default=6, help="index maximum precision")
     parser.add_argument("-t", "--threads", type=int, default=5, help="number of threads")
+    parser.add_argument("-s", "--sharded", default=False, action="store_true",
+                        help="build sharded index")
+    parser.add_argument("--split-size", type=int, default=1,
+                        help="number of symbols to shard (sharded index only)")
     args = parser.parse_args()
-    build_index(args.input, args.output, args.precision, country_filter=args.country, num_threads=args.threads)
+    build_index(
+        args.input,
+        args.output,
+        args.precision,
+        country_filter=args.country,
+        num_threads=args.threads,
+        sharded=args.sharded,
+        shard_split=args.split_size,
+    )
 
 
 if __name__ == "__main__":
