@@ -1,40 +1,43 @@
 import os.path
 import requests
-from typing import Optional, Self
+from typing import Optional, Self, Literal
 from io import StringIO
 from geohash import encode
 from collections import defaultdict
-from pycountry import countries
-from pycountry.db import Country
 
-PREBUILT_BASE_URL = "https://github.com/viert/worldgeo/raw/main/world"
+PREBUILT_BASE_URL = "https://github.com/viert/worldgeo/raw/main/prebuilt"
+PrebuiltIndexName = Literal["world"]
+
+
+class IndexLoadError(Exception):
+    pass
+
+
+class IndexNotFound(Exception):
+    pass
 
 
 class Index:
     precision: int
     _src: Optional[str]
-    _countries: dict[str, Country]
     _index: dict[str, str]
 
     def __init__(self, precision: int):
         self.precision = precision
-        self._countries = {}
         self._index = {}
         self._src = None
 
-    def add(self, gh: str, country: Country):
-        if country.alpha_3 not in self._countries:
-            self._countries[country.alpha_3] = country
-        self._index[gh] = country.alpha_3
+    def add(self, gh: str, code: str):
+        self._index[gh] = code
 
-    def find_by_hash(self, gh: str) -> Optional[Country]:
+    def find_by_hash(self, gh: str) -> Optional[str]:
         for i in range(self.precision, 0, -1):
             key = gh[:i]
             if key in self._index:
-                return self._countries[self._index[key]]
+                return self._index[key]
         return None
 
-    def find_by_coord(self, lat: float, lon: float) -> Optional[Country]:
+    def find_by_coord(self, lat: float, lon: float) -> Optional[str]:
         gh = encode(lat, lon)
         return self.find_by_hash(gh)
 
@@ -51,8 +54,8 @@ class Index:
                 f.write(f"G {code} {hashes}\n")
 
     @classmethod
-    def load_default(cls, precision: int) -> Self:
-        path = os.path.join(PREBUILT_BASE_URL, f"world{precision}.idx")
+    def load_prebuilt(cls, index_name: PrebuiltIndexName, precision: int) -> Self:
+        path = os.path.join(PREBUILT_BASE_URL, index_name, f"world{precision}.idx")
         return cls.load(path)
 
     @classmethod
@@ -65,13 +68,21 @@ class Index:
         use_http = path.startswith("http://") or path.startswith("https://")
         if use_http:
             resp = requests.get(path)
+            if resp.status_code == 404:
+                raise IndexNotFound(f"index {path} not found")
+            elif resp.status_code != 200:
+                raise IndexLoadError(f"error loading index {path}: status code {resp.status_code}")
             f = StringIO(resp.text)
         else:
-            f = open(path)
+            if not os.path.isfile(path):
+                raise IndexNotFound(f"index {path} not found")
+            try:
+                f = open(path)
+            except EnvironmentError as e:
+                raise IndexLoadError(f"error loading index {path}: {e}")
 
         precision = None
         index = {}
-        ctrs = {}
 
         for line in f:
             line = line.strip()
@@ -83,19 +94,16 @@ class Index:
                 case "G":
                     code = tokens[1]
                     ghs = tokens[2].split(":")
-                    country = countries.get(alpha_3=code)
-                    ctrs[code] = country
                     for gh in ghs:
                         index[gh] = code
         f.close()
 
         if precision is None:
-            raise RuntimeError("file is corrupted, precision cannot be found")
+            raise IndexLoadError("file is corrupted, precision cannot be found")
 
         inst = cls(precision)
         inst._src = path
         inst._index = index
-        inst._countries = ctrs
 
         return inst
 

@@ -3,7 +3,6 @@ import logging
 import sys
 import time
 import requests
-from pycountry import countries
 from logging import getLogger, Logger, StreamHandler, Formatter
 from threading import Thread
 from typing import Optional, Dict, Any
@@ -29,13 +28,13 @@ def worker(wrk_id: int, in_queue: Queue, out_queue: Queue, max_precision: int):
         item = in_queue.get()
         if item is None:
             break
-        country, boundaries = item
-        log.debug("[wrk %d] collecting geohash list for %s", wrk_id, country.name)
+        code, boundaries = item
+        log.debug("[wrk %d] collecting geohash list for %s", wrk_id, code)
         t1 = time.time()
         for gh in collect(boundaries, max_precision=max_precision):
-            out_queue.put((gh, country))
+            out_queue.put((gh, code))
         t2 = time.time()
-        log.debug("[wrk %d] collected geohash list for %s in %.3fs", wrk_id, country.name, t2-t1)
+        log.debug("[wrk %d] collected geohash list for %s in %.3fs", wrk_id, code, t2-t1)
         in_queue.task_done()
     out_queue.put(None)
     log.debug("[wrk %d] finished", wrk_id)
@@ -78,20 +77,13 @@ def build_index(
     for item in data["features"]:
         country_name = item['properties']['name']
         country_code = item["id"]
-        country = countries.get(alpha_3=country_code)
-
-        if country is None:
-            log.warning("skipping country %s (%s) not found in pycountry", country_code, country_name)
-            continue
-
         if country_filter and (
-                country.alpha_2.lower() != country_filter and
-                country.alpha_3.lower() != country_filter and
-                country.name.lower() != country_filter
+                country_name.lower() != country_filter and
+                country_code.lower() != country_filter
         ):
             continue
         boundaries = shape(item["geometry"])
-        in_queue.put((country, boundaries))
+        in_queue.put((country_code, boundaries))
 
     for _ in range(num_threads):
         in_queue.put(None)
