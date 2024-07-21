@@ -1,5 +1,5 @@
 import os.path
-from typing import Dict, Optional, Tuple, Generator
+from typing import Dict, Optional, Tuple
 from pycountry.db import Country
 from geohash import encode, _base32
 from .index import Index
