@@ -3,6 +3,7 @@ from multiprocessing import Pool
 from typing import Dict, Optional, Tuple
 from geohash import encode, _base32
 from .index import Index, IndexNotFound, PREBUILT_BASE_URL, PrebuiltIndexName
+from .misc import generate_possible_hashes
 
 
 class ShardedIndex:
@@ -38,10 +39,10 @@ class ShardedIndex:
     def filename(prefix: str, shard: str) -> str:
         return prefix + "_" + shard + ".idx"
 
-    def dump(self, prefix: str):
+    def dump(self, prefix: str, *, mkdir: bool = False):
         for shard, idx in self._idx.items():
             filename = self.filename(prefix, shard)
-            idx.dump(filename)
+            idx.dump(filename, mkdir=mkdir)
 
     @staticmethod
     def _shard_loader(args: Tuple[str, str]) -> Optional[Tuple[str, Index]]:
@@ -54,18 +55,7 @@ class ShardedIndex:
 
     @classmethod
     def load(cls, prefix: str, *, shard_split: int = 1, num_threads: int = 10):
-
-        p = list(_base32)
-        r = []
-
-        # TODO optimize, implement as a generator
-        for i in range(shard_split-1):
-            for code in p:
-                for suffix in _base32:
-                    r.append(code+suffix)
-            p = r
-
-        args = [(shard, cls.filename(prefix, shard)) for shard in p]
+        args = [(shard, cls.filename(prefix, shard)) for shard in generate_possible_hashes(shard_split)]
         with Pool(num_threads) as pool:
             results = filter(lambda v: v, pool.map(cls._shard_loader, args))
 
