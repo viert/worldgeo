@@ -17,6 +17,14 @@ class IndexNotFound(Exception):
     pass
 
 
+class SourceLoadError(Exception):
+    pass
+
+
+class InvalidSource(Exception):
+    pass
+
+
 class Index:
     precision: int
     _src: Optional[str]
@@ -41,11 +49,15 @@ class Index:
         gh = encode(lat, lon)
         return self.find_by_hash(gh)
 
-    def dump(self, filename: str):
+    def dump(self, filename: str, *, mkdir: bool = False):
         dmp = defaultdict(list)
 
         for gh, code in self._index.items():
             dmp[code].append(gh)
+
+        if mkdir:
+            dirname = os.path.dirname(filename)
+            os.makedirs(dirname, exist_ok=True)
 
         with open(filename, "w") as f:
             f.write(f"P {self.precision}\n")
