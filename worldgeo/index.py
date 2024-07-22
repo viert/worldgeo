@@ -6,7 +6,7 @@ from geohash import encode
 from collections import defaultdict
 
 PREBUILT_BASE_URL = "https://github.com/viert/worldgeo/raw/main/prebuilt"
-PrebuiltIndexName = Literal["world"]
+PrebuiltIndexName = Literal["world", "vatsim"]
 
 
 class IndexLoadError(Exception):
@@ -67,7 +67,7 @@ class Index:
 
     @classmethod
     def load_prebuilt(cls, index_name: PrebuiltIndexName, precision: int) -> Self:
-        path = os.path.join(PREBUILT_BASE_URL, index_name, f"world{precision}.idx")
+        path = os.path.join(PREBUILT_BASE_URL, index_name, f"{index_name}{precision}.idx")
         return cls.load(path)
 
     @classmethod
